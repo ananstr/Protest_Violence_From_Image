@@ -1,6 +1,10 @@
 # Protest Detection and Violence Prediction
 
-This notebook uses custom `protest_library` package.
+The goal of this project is to train a multi-task CNN which would be able to detect protest activity and estimate violence intensity from an image. Additionally, the model should be able to detect elements that would be useful for political violence classification, such as the size of the crowd (above 20 and above 100 people), the presence of police, fire, signs, etc.
+
+The dataset for training the model was requested from the authors of the paper "Improving Computer Vision Interpretability: Transparent Two-Level Classification for Complex Scenes", which was not publicly available. The data contains more than 40,000 images - a mix of protest photos pulled from social media and image banks, and random non-protest images.
+
+The main notebook - "Protest_Detection.ipynb" - uses custom `protest_library` package.
 
 - Class definitions for models are located in `models.py`
 - Data loading functions are located in `data_loader.py`
@@ -37,7 +41,7 @@ Related tasks (like recognizing protest, violence, and visual attributes in an i
 - Crucially, the features computed through convolutional layers are all shared by linear layers for multiple classification tasks. This means the main convolutional part of the ResNet acts as a single feature extractor, learning representations that are useful for all the downstream tasks.
 - Multiple Output Heads (Linear Layers for Specific Tasks): After the shared ResNet backbone extracts these features, the network branches into several separate linear (fully connected) layers, each responsible for a specific prediction task:
 - Binary Image Category (Protest or Non-Protest): 1 output neuron. This is a binary classification task.
-- Visual Attributes: 10 output neurons. Each neuron likely corresponds to the presence/absence of a specific attribute (e.g., "crowd," "sign," "police," etc.), making this 10 separate binary classifications.
+- Visual Attributes: 10 output neurons. Each neuron corresponds to the presence/absence of a specific attribute (e.g., "crowd," "sign," "police," etc.), making this 10 separate binary classifications.
 - Perceived Violence: 1 output neuron. This is a regression task, predicting a continuous score for violence.
 Total Outputs: In total, this single model outputs 1+10+1=12 prediction scores.
 
@@ -52,16 +56,3 @@ Protest classification (1 output).
 Visual attributes classification (10 outputs, likely 10 independent BCE losses or one BCEWithLogitsLoss over all 10 outputs).
 Mean Squared Error (MSE) Loss: Used for the regression dimensions:
 Perceived violence (1 output).
-Image sentiment (4 outputs).
-- Loss Combination: These individual loss values (BCE for protest, BCE for attributes, MSE for violence) are summed up to form a single total loss.
-- Backpropagation: This total loss is then used to backpropagate gradients through all the linear output layers and the shared 50-layer ResNet backbone. This means the features learned by the ResNet are optimized to be good for all tasks simultaneously.
-
-### How it "Works" (Conceptual Flow):
-An image enters the ResNet-50 backbone.
-The ResNet extracts a rich, high-level feature representation of the image.
-This single feature representation is then fed into multiple specialized linear layers.
-Each linear layer makes a prediction for its specific task (protest, attributes, violence, sentiment).
-Based on these predictions and the true labels, separate loss values are calculated for each task (using BCE or MSE as appropriate).
-All these individual losses are combined.
-The combined loss guides the gradient descent process, updating the weights throughout the entire network – from the shared convolutional layers all the way to the individual output layers.
-This joint training allows the model to leverage common visual cues across tasks. For example, learning what constitutes a "protest" image (for binary classification) might help in recognizing "crowds" (a visual attribute) or detecting "anger" (a sentiment dimension), as the shared ResNet learns features relevant to all these aspects.
