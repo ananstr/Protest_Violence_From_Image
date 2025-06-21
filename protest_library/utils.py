@@ -23,6 +23,19 @@ def get_transforms():
     ])
     return transform
 
+def augment_data():
+    """Transforms with augmentation for training data"""
+    return transforms.Compose([
+        # Augmentation (random operations)
+        transforms.RandomResizedCrop(224, scale=(0.7, 1.0)),
+        transforms.RandomRotation(30),
+        transforms.RandomHorizontalFlip(),
+        transforms.ColorJitter(0.3, 0.3, 0.3),
+        
+        # Preprocessing (deterministic operations)
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
 
 def setup_data_loaders(train_dataset, val_dataset, test_dataset, batch_size=32):
     """Set up data loaders for training, validation, and testing."""

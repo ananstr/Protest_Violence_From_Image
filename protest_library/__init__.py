@@ -1,9 +1,6 @@
 """
 Protest Detection and Violence Prediction Library
 
-A comprehensive library for training and evaluating models for protest detection 
-and violence prediction in images.
-
 Modules:
 - datasets: Dataset classes for PyTorch data loading
 - models: Neural network architectures
@@ -25,17 +22,19 @@ from .data_loader import (
 from .training import train_unified_model
 from .evaluation import evaluate_model, evaluate_multi_task_model, predict_single_image
 from .visualization import (
-    plot_stylish_confusion_matrix,
-    plot_stylish_roc_curve,
-    plot_stylish_pr_curve,
-    plot_stylish_misclassifications,
+    plot_confusion_matrix,
+    plot_roc_curve,
+    plot_pr_curve,
+    plot_misclassifications,
     plot_training_history,
     analyze_violence_by_features,
-    create_correlation_analysis
+    create_correlation_analysis,
+    create_attention_analysis
 )
 from .utils import (
     get_device,
     get_transforms,
+    augment_data,
     setup_data_loaders,
     save_model,
     load_model,
@@ -45,7 +44,7 @@ from .utils import (
 )
 
 __version__ = "1.0.0"
-__author__ = "Protest Detection Team"
+__author__ = "Anastasia Chernavskaia: Protest Detection"
 
 __all__ = [
     # Dataset classes
@@ -69,17 +68,19 @@ __all__ = [
     'predict_single_image',
     
     # Visualization functions
-    'plot_stylish_confusion_matrix',
-    'plot_stylish_roc_curve',
-    'plot_stylish_pr_curve',
-    'plot_stylish_misclassifications',
+    'plot_confusion_matrix',
+    'plot_roc_curve',
+    'plot_pr_curve',
+    'plot_misclassifications',
     'plot_training_history',
     'analyze_violence_by_features',
     'create_correlation_analysis',
+    'create_attention_analysis',
     
     # Utility functions
     'get_device',
     'get_transforms',
+    'augment_data',
     'setup_data_loaders',
     'save_model',
     'load_model',

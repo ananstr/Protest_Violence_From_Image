@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 
 def train_model(model, train_loader, val_loader, criterion, optimizer, scheduler, 
-                device, num_epochs=10, early_stopping_patience=5):
+                device, num_epochs=10, early_stopping_patience=4):
     """
     Train a single-task protest detection model.
     
@@ -137,8 +137,11 @@ def train_unified_model(model, train_loader, val_loader, optimizer, scheduler, d
     }
     
     best_val_loss = float('inf')
-    early_stopping_patience = 5
+    early_stopping_patience = 4
     no_improve_epochs = 0
+    
+    # gradient clipping threshold
+    max_grad_norm = 1.0
     
     for epoch in range(num_epochs):
         print(f"\nEpoch {epoch+1}/{num_epochs}")
@@ -171,7 +174,15 @@ def train_unified_model(model, train_loader, val_loader, optimizer, scheduler, d
                          violence_weight * loss_violence)
             
             # Backward pass
+            optimizer.zero_grad()
             total_loss.backward()
+            
+            # Change: added gradient clipping
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(), 
+                max_grad_norm
+            )
+            
             optimizer.step()
             
             # Accumulate losses

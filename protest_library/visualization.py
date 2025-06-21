@@ -21,8 +21,8 @@ colors = {
 }
 
 
-def plot_stylish_confusion_matrix(all_labels, all_preds, save_path='confusion_matrix.png'):
-    """Plot a stylish confusion matrix."""
+def plot_confusion_matrix(all_labels, all_preds, save_path='confusion_matrix.png'):
+    """Plot a confusion matrix."""
     # Set the visual style
     plt.style.use('default')
     sns.set_palette("deep")
@@ -62,8 +62,8 @@ def plot_stylish_confusion_matrix(all_labels, all_preds, save_path='confusion_ma
     plt.show()
 
 
-def plot_stylish_roc_curve(all_labels, all_scores, save_path='roc_curve.png'):
-    """Plot a stylish ROC curve."""
+def plot_roc_curve(all_labels, all_scores, save_path='roc_curve.png'):
+    """Plot an ROC curve."""
     # Calculate ROC curve
     fpr, tpr, _ = roc_curve(all_labels, all_scores)
     roc_auc = auc(fpr, tpr)
@@ -111,8 +111,8 @@ def plot_stylish_roc_curve(all_labels, all_scores, save_path='roc_curve.png'):
     plt.show()
 
 
-def plot_stylish_pr_curve(all_labels, all_scores, save_path='precision_recall_curve.png'):
-    """Plot a stylish precision-recall curve."""
+def plot_pr_curve(all_labels, all_scores, save_path='precision_recall_curve.png'):
+    """Plot a precision-recall curve."""
     # Calculate precision-recall curve
     precision, recall, thresholds = precision_recall_curve(all_labels, all_scores)
     
@@ -169,7 +169,7 @@ def plot_stylish_pr_curve(all_labels, all_scores, save_path='precision_recall_cu
     return optimal_threshold
 
 
-def plot_stylish_misclassifications(image_paths, all_labels, all_preds, all_scores,  
+def plot_misclassifications(image_paths, all_labels, all_preds, all_scores,  
                                    save_path='misclassifications.png'):
     """Plot misclassified examples by loading high-resolution images on demand."""
     # Find misclassified examples
@@ -428,3 +428,100 @@ def create_correlation_analysis(annot_train):
         strength = "Strong" if abs(corr) > 0.3 else "Moderate" if abs(corr) > 0.1 else "Weak"
         direction = "positive" if corr > 0 else "negative"
         print(f"{feature:12}: {corr:+.3f} ({strength} {direction})")
+
+def create_attention_analysis(
+    model,
+    test_images,
+    test_image_paths,
+    protest_labels,
+    protest_preds,
+    violence_labels,
+    violence_preds,
+    attributes_labels,
+    attributes_preds,
+    device
+):
+    """Create a visualization showing model focus areas and prediction analysis"""
+    
+    # Select diverse examples for analysis
+    high_protest_idx = np.where((protest_labels == 1) & (protest_preds > 0.7))[0]
+    low_protest_idx = np.where((protest_labels == 0) & (protest_preds < 0.3))[0]
+    high_violence_idx = np.where(violence_labels > 0.3)[0]
+    low_violence_idx = np.where(violence_labels < 0.1)[0]
+    
+    # Select one example from each category
+    examples = []
+    if len(high_protest_idx) > 0:
+        examples.append(('High Protest (Correct)', high_protest_idx[0]))
+    if len(low_protest_idx) > 0:
+        examples.append(('Non-Protest (Correct)', low_protest_idx[0]))
+    if len(high_violence_idx) > 0:
+        examples.append(('High Violence', high_violence_idx[0]))
+    if len(low_violence_idx) > 0:
+        examples.append(('Low Violence', low_violence_idx[0]))
+    
+    # Create comprehensive analysis visualization
+    fig, axes = plt.subplots(2, min(4, len(examples)), figsize=(20, 12))
+    if len(examples) == 1:
+        axes = axes.reshape(2, 1)
+    elif len(examples) < 4:
+        # Add padding if we have fewer examples
+        fig, axes = plt.subplots(2, len(examples), figsize=(5*len(examples), 12))
+    
+    for i, (label, idx) in enumerate(examples[:4]):
+        if i < axes.shape[1]:
+            # Load and display original image
+            try:
+                img_path = test_image_paths[idx]
+                original_img = Image.open(img_path)
+                if original_img.mode != 'RGB':
+                    original_img = original_img.convert('RGB')
+                
+                axes[0, i].imshow(original_img)
+                axes[0, i].set_title(f'{label}\nProtest: {protest_labels[idx]:.0f}→{protest_preds[idx]:.2f}, Violence: {violence_labels[idx]:.2f}→{violence_preds[idx]:.2f}', 
+                                   fontsize=12, fontweight='bold')
+                axes[0, i].axis('off')
+                
+            except Exception as e:
+                print(f"Could not load image {img_path}: {e}")
+                # Fallback to processed image
+                img_array = test_images[idx]
+                if img_array.max() <= 1.0:
+                    display_img = (img_array * 255).astype(np.uint8)
+                else:
+                    display_img = img_array.astype(np.uint8)
+                
+                if display_img.shape[0] == 3:
+                    display_img = np.transpose(display_img, (1, 2, 0))
+                
+                axes[0, i].imshow(display_img)
+                axes[0, i].set_title(f'{label}\nProtest: {protest_labels[idx]:.0f}→{protest_preds[idx]:.2f}, Violence: {violence_labels[idx]:.2f}→{violence_preds[idx]:.2f}', 
+                                   fontsize=12, fontweight='bold')
+                axes[0, i].axis('off')
+            
+            # Create attribute analysis
+            attr_names = ['sign', 'photo', 'fire', 'police', 'children', 'group_20', 'group_100', 'flag', 'night', 'shouting']
+            actual_attrs = attributes_labels[idx]
+            pred_attrs = attributes_preds[idx]
+            
+            x_pos = np.arange(len(attr_names))
+            width = 0.35
+            
+            axes[1, i].bar(x_pos - width/2, pred_attrs, width, label='Predicted', alpha=0.8, color='skyblue')
+            axes[1, i].bar(x_pos + width/2, actual_attrs, width, label='Actual', alpha=0.8, color='orange')
+            
+            axes[1, i].set_xlabel('Visual Attributes', fontsize=10)
+            axes[1, i].set_ylabel('Probability/Label', fontsize=10)
+            axes[1, i].set_title(f'Attribute Predictions for Example {i+1}', fontsize=11, fontweight='bold')
+            axes[1, i].set_xticks(x_pos)
+            axes[1, i].set_xticklabels(attr_names, rotation=45, ha='right', fontsize=9)
+            axes[1, i].legend()
+            axes[1, i].grid(True, alpha=0.3, axis='y')
+    
+    plt.suptitle('CNN Model Analysis: Image Examples and Attribute Predictions', fontsize=16, fontweight='bold')
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.93, bottom=0.15, hspace=0.4, wspace=0.3)
+    
+    # Save the analysis
+    plt.savefig('results/cnn_attention_analysis.png', dpi=300, bbox_inches='tight')
+    plt.show()
