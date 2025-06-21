@@ -4,6 +4,8 @@ The goal of this project is to train a multi-task CNN which would be able to det
 
 The dataset for training the model was requested from the authors of the paper "Improving Computer Vision Interpretability: Transparent Two-Level Classification for Complex Scenes", which was not publicly available. The data contains more than 40,000 images - a mix of protest photos pulled from social media and image banks, and random non-protest images.
 
+The results and findings are described in the PDF report.
+
 The main notebook - "Protest_Detection.ipynb" - uses custom `protest_library` package.
 
 - Class definitions for models are located in `models.py`
